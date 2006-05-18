@@ -1,0 +1,11 @@
+.cvsignore
+Changes
+MANIFEST
+META.yml
+Makefile.PL
+README
+lib/Date/ISO8601.pm
+t/y.t
+t/yd.t
+t/ymd.t
+t/ywd.t
