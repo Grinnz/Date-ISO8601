@@ -1,12 +1,34 @@
-use Test::More tests => 1 + 3*19 + 6 + 6*11 + 4;
+use Test::More tests => 1 + 3*19 + 6 + 6*11 + 11;
 
 BEGIN {
 	use_ok "Date::ISO8601",
 		qw(month_days cjdn_to_ymd ymd_to_cjdn present_ymd);
 }
 
-use Math::BigInt;
-use Math::BigRat;
+use Math::BigInt 1.16;
+use Math::BigRat 0.04;
+
+sub match_val($$) {
+	my($a, $b) = @_;
+	ok ref($a) eq ref($b) && $a == $b;
+}
+
+sub match_vec($$) {
+	my($a, $b) = @_;
+	unless(@$a == @$b) {
+		ok 0;
+		return;
+	}
+	for(my $i = 0; $i != @$a; $i++) {
+		my $aval = $a->[$i];
+		my $bval = $b->[$i];
+		unless(ref($aval) eq ref($bval) && $aval == $bval) {
+			ok 0;
+			return;
+		}
+	}
+	ok 1;
+}
 
 my @prep = (
 	sub { $_[0] },
@@ -17,7 +39,7 @@ my @prep = (
 sub check_days($$$) {
 	my($y, $m, $md) = @_;
 	foreach my $prep (@prep) {
-		is month_days($prep->($y), $m), $md;
+		match_val month_days($prep->($y), $m), $md;
 	}
 }
 
@@ -57,9 +79,9 @@ like $@, qr/\Aday number /;
 sub check_conv($$$$) {
 	my($cjdn, $y, $m, $d) = @_;
 	foreach my $prep (@prep) {
-		is_deeply [ cjdn_to_ymd($prep->($cjdn)) ],
+		match_vec [ cjdn_to_ymd($prep->($cjdn)) ],
 			[ $prep->($y), $m, $d ];
-		is_deeply [ $prep->($cjdn) ],
+		match_vec [ $prep->($cjdn) ],
 			[ ymd_to_cjdn($prep->($y), $m, $d) ];
 	}
 }
@@ -80,3 +102,11 @@ is present_ymd(2406029), "1875-05-20";
 is present_ymd(1875, 5, 20), "1875-05-20";
 is present_ymd(2451545), "2000-01-01";
 is present_ymd(2000, 1, 1), "2000-01-01";
+
+is present_ymd(1233, 0, 0), "1233-00-00";
+is present_ymd(1233, 2, 29), "1233-02-29";
+is present_ymd(1233, 99, 99), "1233-99-99";
+eval { present_ymd(1233, -1, 1) }; isnt $@, "";
+eval { present_ymd(1233, 100, 1) }; isnt $@, "";
+eval { present_ymd(1233, 1, -1) }; isnt $@, "";
+eval { present_ymd(1233, 1, 100) }; isnt $@, "";

@@ -3,7 +3,7 @@ use Test::More tests => 1 + 3*14;
 BEGIN { use_ok "Date::ISO8601", qw(present_y); }
 
 use Math::BigInt;
-use Math::BigRat;
+use Math::BigRat 0.02;
 
 my @prep = (
 	sub { $_[0] },

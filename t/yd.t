@@ -1,12 +1,34 @@
-use Test::More tests => 1 + 3*8 + 3 + 6*9 + 4;
+use Test::More tests => 1 + 3*8 + 3 + 6*9 + 9;
 
 BEGIN {
 	use_ok "Date::ISO8601",
 		qw(year_days cjdn_to_yd yd_to_cjdn present_yd);
 }
 
-use Math::BigInt;
-use Math::BigRat;
+use Math::BigInt 1.16;
+use Math::BigRat 0.04;
+
+sub match_val($$) {
+	my($a, $b) = @_;
+	ok ref($a) eq ref($b) && $a == $b;
+}
+
+sub match_vec($$) {
+	my($a, $b) = @_;
+	unless(@$a == @$b) {
+		ok 0;
+		return;
+	}
+	for(my $i = 0; $i != @$a; $i++) {
+		my $aval = $a->[$i];
+		my $bval = $b->[$i];
+		unless(ref($aval) eq ref($bval) && $aval == $bval) {
+			ok 0;
+			return;
+		}
+	}
+	ok 1;
+}
 
 my @prep = (
 	sub { $_[0] },
@@ -17,7 +39,7 @@ my @prep = (
 sub check_days($$) {
 	my($y, $yd) = @_;
 	foreach my $prep (@prep) {
-		is year_days($prep->($y)), $yd;
+		match_val year_days($prep->($y)), $yd;
 	}
 }
 
@@ -40,8 +62,8 @@ like $@, qr/\Aday number /;
 sub check_conv($$$) {
 	my($cjdn, $y, $d) = @_;
 	foreach my $prep (@prep) {
-		is_deeply [ cjdn_to_yd($prep->($cjdn)) ], [ $prep->($y), $d ];
-		is_deeply [ $prep->($cjdn) ], [ yd_to_cjdn($prep->($y), $d) ];
+		match_vec [ cjdn_to_yd($prep->($cjdn)) ], [ $prep->($y), $d ];
+		match_vec [ $prep->($cjdn) ], [ yd_to_cjdn($prep->($y), $d) ];
 	}
 }
 
@@ -59,3 +81,9 @@ is present_yd(2406029), "1875-140";
 is present_yd(1875, 140), "1875-140";
 is present_yd(2451545), "2000-001";
 is present_yd(2000, 1), "2000-001";
+
+is present_yd(1233, 0), "1233-000";
+is present_yd(1233, 366), "1233-366";
+is present_yd(1233, 999), "1233-999";
+eval { present_yd(1233, -1) }; isnt $@, "";
+eval { present_yd(1233, 1000) }; isnt $@, "";

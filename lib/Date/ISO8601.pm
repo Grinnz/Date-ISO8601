@@ -60,9 +60,10 @@ astronomical year numbering.
 
 The second ISO 8601 calendar divides time up into the same years as
 the first, but divides the year directly into days, with no months.
-It calls this "ordinal dates".  It is commonly referred to as "Julian
-dates", a mistake apparently deriving from true Julian Day Numbers,
-which divide time up solely into linearly counted days.
+The standard calls this "ordinal dates".  Ordinal dates are commonly
+referred to as "Julian dates", a mistake apparently deriving from true
+Julian Day Numbers, which divide time up solely into linearly counted
+days.
 
 The third ISO 8601 calendar divides time up into years, weeks, and days.
 The years approximate the years of the first two calendars, so they stay
@@ -96,7 +97,7 @@ use strict;
 
 use Carp qw(croak);
 
-our $VERSION = "0.000";
+our $VERSION = "0.001";
 
 use base qw(Exporter);
 our @EXPORT_OK = qw(
@@ -173,6 +174,15 @@ This is the minimum-length presentation format.  If it is desired to
 use a form that is longer than necessary, such as to use at least five
 digits for all year numbers (as the Long Now Foundation does), then the
 right tool is C<sprintf> (see L<perlfunc/sprintf>).
+
+This format is unconditionally conformant to all versions of ISO 8601
+for years [1583, 9999].  For years [0, 1582], preceding the historical
+introduction of the Gregorian calendar, it is conformant only where
+it is mutually agreed that such dates (represented in the proleptic
+Gregorian calendar) are acceptable.  For years outside the range [0,
+9999], where the expanded format must be used, the result is only
+conformant to ISO 8601:2004 (earlier versions lacked these formats),
+and only where it is mutually agreed to use this format.
 
 =cut
 
@@ -281,16 +291,27 @@ sub ymd_to_cjdn($$$) {
 =item present_ymd(YEAR, MONTH, DAY)
 
 Puts the given date into ISO 8601 Gregorian textual presentation format.
-The `extended' format (with "-" separators) is used.  If the date is
-given as a (YEAR, MONTH, DAY) triplet then these are not checked for
-consistency; this allows the use of this function on data other than
-actual Gregorian dates.
+The `extended' format (with "-" separators) is used.  The conformance
+notes for C<present_y> apply to this function also.
+
+If the date is given as a (YEAR, MONTH, DAY) triplet then these are not
+checked for consistency.  The MONTH and DAY values are only checked to
+ensure that they fit into the fixed number of digits.  This allows the
+use of this function on data other than actual Gregorian dates.
 
 =cut
 
 sub present_ymd($;$$) {
-	@_ = cjdn_to_ymd($_[0]) if @_ == 1;
-	my($y, $m, $d) = @_;
+	my($y, $m, $d);
+	if(@_ == 1) {
+		($y, $m, $d) = cjdn_to_ymd($_[0]);
+	} else {
+		($y, $m, $d) = @_;
+		croak "month number $m is out of the displayable range"
+			unless $m >= 0 && $m < 100;
+		croak "day number $d is out of the displayable range"
+			unless $d >= 0 && $d < 100;
+	}
 	return sprintf("%s-%02d-%02d", present_y($y), numify($m), numify($d));
 }
 
@@ -359,7 +380,6 @@ sub yd_to_cjdn($$) {
 	croak "day number $d is out of the range [1, $yd]"
 		unless $d >= 1 && $d <= $yd;
 	$d = numify($d);
-	my $days = 365 * $y;
 	my $leaps = ($y + 3) / 4;
 	$leaps -= ($leaps - 1) / 25 unless $leaps == 0;
 	return (GREGORIAN_ZERO_CJDN + 365*$y + $leaps + ($d - 1)) +
@@ -371,15 +391,25 @@ sub yd_to_cjdn($$) {
 =item present_yd(YEAR, DAY)
 
 Puts the given date into ISO 8601 ordinal textual presentation format.
-The `extended' format (with "-" separators) is used.  If the date is given
-as a (YEAR, DAY) pair then these are not checked for consistency; this
-allows the use of this function on data other than actual ordinal dates.
+The `extended' format (with "-" separators) is used.  The conformance
+notes for C<present_y> apply to this function also.
+
+If the date is given as a (YEAR, DAY) pair then these are not checked
+for consistency.  The DAY value is only checked to ensure that it fits
+into the fixed number of digits.  This allows the use of this function
+on data other than actual ordinal dates.
 
 =cut
 
 sub present_yd($;$) {
-	@_ = cjdn_to_yd($_[0]) if @_ == 1;
-	my($y, $d) = @_;
+	my($y, $d);
+	if(@_ == 1) {
+		($y, $d) = cjdn_to_yd($_[0]);
+	} else {
+		($y, $d) = @_;
+		croak "day number $d is out of the displayable range"
+			unless $d >= 0 && $d < 1000;
+	}
 	return sprintf("%s-%03d", present_y($y), numify($d));
 }
 
@@ -389,8 +419,7 @@ sub present_yd($;$) {
 
 Each year is divided into weeks, numbered sequentially from 1.  Each week
 is divided into seven days, numbered [1, 7]; day number 1 is Monday.
-The year lengths are are irregular.  The year numbers have unlimited
-range.
+The year lengths are irregular.  The year numbers have unlimited range.
 
 The years correspond to those of the Gregorian calendar.  Each week is
 associated with the Gregorian year that contains its Thursday and hence
@@ -473,16 +502,27 @@ sub ywd_to_cjdn($$$) {
 =item present_ywd(YEAR, WEEK, DAY)
 
 Puts the given date into ISO 8601 week-based textual presentation format.
-The `extended' format (with "-" separators) is used.  If the date is
-given as a (YEAR, WEEK, DAY) triplet then these are not checked for
-consistency; this allows the use of this function on data other than
-actual week-based dates.
+The `extended' format (with "-" separators) is used.  The conformance
+notes for C<present_y> apply to this function also.
+
+If the date is given as a (YEAR, WEEK, DAY) triplet then these are not
+checked for consistency.  The WEEK and DAY values are only checked to
+ensure that they fit into the fixed number of digits.  This allows the
+use of this function on data other than actual week-based dates.
 
 =cut
 
 sub present_ywd($;$$) {
-	@_ = cjdn_to_ywd($_[0]) if @_ == 1;
-	my($y, $w, $d) = @_;
+	my($y, $w, $d);
+	if(@_ == 1) {
+		($y, $w, $d) = cjdn_to_ywd($_[0]);
+	} else {
+		($y, $w, $d) = @_;
+		croak "week number $w is out of the displayable range"
+			unless $w >= 0 && $w < 100;
+		croak "day number $d is out of the displayable range"
+			unless $d >= 0 && $d < 10;
+	}
 	return sprintf("%s-W%02d-%d", present_y($y), numify($w), numify($d));
 }
 
@@ -490,6 +530,7 @@ sub present_ywd($;$$) {
 
 =head1 SEE ALSO
 
+L<Date::JD>,
 L<DateTime>
 
 =head1 AUTHOR
@@ -498,7 +539,7 @@ Andrew Main (Zefram) <zefram@fysh.org>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006 Andrew Main (Zefram) <zefram@fysh.org>
+Copyright (C) 2006, 2007 Andrew Main (Zefram) <zefram@fysh.org>
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

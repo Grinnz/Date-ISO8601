@@ -1,12 +1,34 @@
-use Test::More tests => 1 + 3*12 + 5 + 6*21 + 4;
+use Test::More tests => 1 + 3*12 + 5 + 6*21 + 11;
 
 BEGIN {
 	use_ok "Date::ISO8601",
 		qw(year_weeks cjdn_to_ywd ywd_to_cjdn present_ywd);
 }
 
-use Math::BigInt;
-use Math::BigRat;
+use Math::BigInt 1.16;
+use Math::BigRat 0.04;
+
+sub match_val($$) {
+	my($a, $b) = @_;
+	ok ref($a) eq ref($b) && $a == $b;
+}
+
+sub match_vec($$) {
+	my($a, $b) = @_;
+	unless(@$a == @$b) {
+		ok 0;
+		return;
+	}
+	for(my $i = 0; $i != @$a; $i++) {
+		my $aval = $a->[$i];
+		my $bval = $b->[$i];
+		unless(ref($aval) eq ref($bval) && $aval == $bval) {
+			ok 0;
+			return;
+		}
+	}
+	ok 1;
+}
 
 my @prep = (
 	sub { $_[0] },
@@ -17,7 +39,7 @@ my @prep = (
 sub check_weeks($$) {
 	my($y, $yw) = @_;
 	foreach my $prep (@prep) {
-		is year_weeks($prep->($y)), $yw;
+		match_val year_weeks($prep->($y)), $yw;
 	}
 }
 
@@ -48,9 +70,9 @@ like $@, qr/\Aday number /;
 sub check_conv($$$$) {
 	my($cjdn, $y, $w, $d) = @_;
 	foreach my $prep (@prep) {
-		is_deeply [ cjdn_to_ywd($prep->($cjdn)) ],
+		match_vec [ cjdn_to_ywd($prep->($cjdn)) ],
 			[ $prep->($y), $w, $d ];
-		is_deeply [ $prep->($cjdn) ],
+		match_vec [ $prep->($cjdn) ],
 			[ ywd_to_cjdn($prep->($y), $w, $d) ];
 	}
 }
@@ -81,3 +103,11 @@ is present_ywd(2406029), "1875-W20-4";
 is present_ywd(1875, 20, 4), "1875-W20-4";
 is present_ywd(2441320), "1972-W01-1";
 is present_ywd(1972, 1, 1), "1972-W01-1";
+
+is present_ywd(1233, 0, 0), "1233-W00-0";
+is present_ywd(1233, 53, 1), "1233-W53-1";
+is present_ywd(1233, 99, 9), "1233-W99-9";
+eval { present_ywd(1233, -1, 1) }; isnt $@, "";
+eval { present_ywd(1233, 100, 1) }; isnt $@, "";
+eval { present_ywd(1233, 1, -1) }; isnt $@, "";
+eval { present_ywd(1233, 1, 10) }; isnt $@, "";
