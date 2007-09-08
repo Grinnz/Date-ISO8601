@@ -5,8 +5,8 @@ BEGIN {
 		qw(year_weeks cjdn_to_ywd ywd_to_cjdn present_ywd);
 }
 
-use Math::BigInt 1.16;
-use Math::BigRat 0.04;
+my $have_bigint = eval("use Math::BigInt 1.16; 1");
+my $have_bigrat = eval("use Math::BigRat 0.04; 1");
 
 sub match_val($$) {
 	my($a, $b) = @_;
@@ -32,15 +32,17 @@ sub match_vec($$) {
 
 my @prep = (
 	sub { $_[0] },
-	sub { Math::BigInt->new($_[0]) },
-	sub { Math::BigRat->new($_[0]) },
+	sub { $have_bigint ? Math::BigInt->new($_[0]) : undef },
+	sub { $have_bigrat ? Math::BigRat->new($_[0]) : undef },
 );
 
 sub check_weeks($$) {
 	my($y, $yw) = @_;
-	foreach my $prep (@prep) {
-		match_val year_weeks($prep->($y)), $yw;
-	}
+	foreach my $prep (@prep) { SKIP: {
+		my $py = $prep->($y);
+		skip "numeric type unavailable", 1 unless defined $py;
+		match_val year_weeks($py), $yw;
+	} }
 }
 
 check_weeks(-1994, 52);
@@ -69,12 +71,13 @@ like $@, qr/\Aday number /;
 
 sub check_conv($$$$) {
 	my($cjdn, $y, $w, $d) = @_;
-	foreach my $prep (@prep) {
+	foreach my $prep (@prep) { SKIP: {
+		skip "numeric type unavailable", 2 unless defined $prep->(0);
 		match_vec [ cjdn_to_ywd($prep->($cjdn)) ],
 			[ $prep->($y), $w, $d ];
 		match_vec [ $prep->($cjdn) ],
 			[ ywd_to_cjdn($prep->($y), $w, $d) ];
-	}
+	} }
 }
 
 check_conv(0, -4713, 48, 1);

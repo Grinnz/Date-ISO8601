@@ -2,20 +2,22 @@ use Test::More tests => 1 + 3*14;
 
 BEGIN { use_ok "Date::ISO8601", qw(present_y); }
 
-use Math::BigInt;
-use Math::BigRat 0.02;
+my $have_bigint = eval("use Math::BigInt; 1");
+my $have_bigrat = eval("use Math::BigRat 0.02; 1");
 
 my @prep = (
 	sub { $_[0] },
-	sub { Math::BigInt->new($_[0]) },
-	sub { Math::BigRat->new($_[0]) },
+	sub { $have_bigint ? Math::BigInt->new($_[0]) : undef },
+	sub { $have_bigrat ? Math::BigRat->new($_[0]) : undef },
 );
 
 sub check($$) {
 	my($y, $pres) = @_;
-	foreach my $prep (@prep) {
-		is present_y($prep->($y)), $pres;
-	}
+	foreach my $prep (@prep) { SKIP: {
+		my $py = $prep->($y);
+		skip "numeric type unavailable", 1 unless defined $py;
+		is present_y($py), $pres;
+	} }
 }
 
 check(-123456, "-123456");

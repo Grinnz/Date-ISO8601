@@ -1,12 +1,35 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Date-ISO8601
-version:      0.001
-version_from: lib/Date/ISO8601.pm
-installdirs:  site
+---
+name: Date-ISO8601
+version: 0.002
+author:
+  - 'Andrew Main (Zefram) <zefram@fysh.org>'
+abstract: the three ISO 8601 numerical calendars
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
 requires:
-    Math::BigInt:                  1.64
-    Math::BigRat:                  0.08
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+  Carp: 0
+  Exporter: 0
+  base: 0
+  constant: 0
+  perl: 5.006
+  strict: 0
+  warnings: 0
+build_requires:
+  Module::Build: 0
+  Test::More: 0
+  perl: 5.006
+  strict: 0
+  warnings: 0
+conflicts:
+  Math::BigInt: < 1.64
+  Math::BigRat: < 0.08
+dynamic_config: 0
+provides:
+  Date::ISO8601:
+    file: lib/Date/ISO8601.pm
+    version: 0.002
+generated_by: Module::Build version 0.2808
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
