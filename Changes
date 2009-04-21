@@ -1,3 +1,22 @@
+version 0.003; 2009-04-21
+
+  * use "[0-9]" instead of "\d" in regexp in present_y()
+
+  * test POD syntax and coverage, and rename some internal functions to
+    satisfy the coverage test
+
+  * use simpler "parent" pragma in place of "base"
+
+  * really complete dependency list (was missing "integer")
+
+  * include "distribution_type" entry in META.yml to satisfy CPANTS
+
+  * in documentation, separate "license" section from "copyright" section
+
+  * use full stricture in Build.PL
+
+  * remove from .cvsignore items that don't occur with Module::Build
+
 version 0.002; 2007-09-08
 
   * build with Module::Build instead of ExtUtils::MakeMaker

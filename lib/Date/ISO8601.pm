@@ -97,9 +97,9 @@ use strict;
 
 use Carp qw(croak);
 
-our $VERSION = "0.002";
+our $VERSION = "0.003";
 
-use base qw(Exporter);
+use parent "Exporter";
 our @EXPORT_OK = qw(
 	present_y
 	month_days cjdn_to_ymd ymd_to_cjdn present_ymd
@@ -107,19 +107,19 @@ our @EXPORT_OK = qw(
 	year_weeks cjdn_to_ywd ywd_to_cjdn present_ywd
 );
 
-# numify(A): turn possibly-object number into native Perl integer
+# _numify(A): turn possibly-object number into native Perl integer
 
-sub numify($) {
+sub _numify($) {
 	my($a) = @_;
 	return ref($a) eq "" ? $a : $a->numify;
 }
 
-# fdiv(A, B): divide A by B, flooring remainder
+# _fdiv(A, B): divide A by B, flooring remainder
 #
 # B must be a positive Perl integer.  A may be a Perl integer, Math::BigInt,
 # or Math::BigRat.  The result has the same type as A.
 
-sub fdiv($$) {
+sub _fdiv($$) {
 	my($a, $b) = @_;
 	if(ref($a) eq "Math::BigRat") {
 		return ($a / $b)->bfloor;
@@ -134,12 +134,12 @@ sub fdiv($$) {
 	}
 }
 
-# fmod(A, B): A modulo B, flooring remainder
+# _fmod(A, B): A modulo B, flooring remainder
 #
 # B must be a positive Perl integer.  A may be a Perl integer, Math::BigInt,
 # or Math::BigRat.  The result has the same type as A.
 
-sub fmod($$) {
+sub _fmod($$) {
 	my($a, $b) = @_;
 	if(ref($a) eq "Math::BigRat") {
 		return $a - $b * ($a / $b)->bfloor;
@@ -188,7 +188,7 @@ and only where it is mutually agreed to use this format.
 
 sub present_y($) {
 	my($y) = @_;
-	my($sign, $digits) = ("$y" =~ /\A\+?(-?)0*(\d+?)\z/);
+	my($sign, $digits) = ("$y" =~ /\A\+?(-?)0*([0-9]+?)\z/);
 	$digits = ("0" x (4 - length($digits))).$digits
 		unless length($digits) >= 4;
 	$sign = "+" if $sign eq "" && length($digits) > 4;
@@ -213,9 +213,10 @@ days in that month as a native Perl integer.
 
 =cut
 
-sub year_leap($) {
+sub _year_leap($) {
 	my($y) = @_;
-	return fmod($y, 4) == 0 && (fmod($y, 100) != 0 || fmod($y, 400) == 0);
+	return _fmod($y, 4) == 0 &&
+		(_fmod($y, 100) != 0 || _fmod($y, 400) == 0);
 }
 
 {
@@ -225,7 +226,7 @@ sub year_leap($) {
 		croak "month number $m is out of the range [1, 12]"
 			unless $m >= 1 && $m <= 12;
 		if($m == 2) {
-			return year_leap($y) ? 29 : 28;
+			return _year_leap($y) ? 29 : 28;
 		} else {
 			return $month_length[$m - 1];
 		}
@@ -237,9 +238,9 @@ sub year_leap($) {
 		(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365);
 	my @leap_monthstarts =
 		(0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366);
-	sub year_monthstarts($) {
+	sub _year_monthstarts($) {
 		my($y) = @_;
-		return year_leap($y) ?
+		return _year_leap($y) ?
 			\@leap_monthstarts : \@nonleap_monthstarts;
 	}
 }
@@ -256,7 +257,7 @@ sub cjdn_to_yd($);
 sub cjdn_to_ymd($) {
 	my($cjdn) = @_;
 	my($y, $d) = cjdn_to_yd($cjdn);
-	my $monthstarts = year_monthstarts($y);
+	my $monthstarts = _year_monthstarts($y);
 	my $m = 1;
 	while($d > $monthstarts->[$m]) {
 		$m++;
@@ -277,12 +278,12 @@ sub ymd_to_cjdn($$$) {
 	my($y, $m, $d) = @_;
 	croak "month number $m is out of the range [1, 12]"
 		unless $m >= 1 && $m <= 12;
-	$m = numify($m);
-	my $monthstarts = year_monthstarts($y);
+	$m = _numify($m);
+	my $monthstarts = _year_monthstarts($y);
 	my $md = $monthstarts->[$m] - $monthstarts->[$m - 1];
 	croak "day number $d is out of the range [1, $md]"
 		unless $d >= 1 && $d <= $md;
-	$d = numify($d);
+	$d = _numify($d);
 	return yd_to_cjdn($y, $monthstarts->[$m - 1] + $d);
 }
 
@@ -312,7 +313,8 @@ sub present_ymd($;$$) {
 		croak "day number $d is out of the displayable range"
 			unless $d >= 0 && $d < 100;
 	}
-	return sprintf("%s-%02d-%02d", present_y($y), numify($m), numify($d));
+	return sprintf("%s-%02d-%02d", present_y($y),
+		_numify($m), _numify($d));
 }
 
 =back
@@ -334,7 +336,7 @@ days in that year as a native Perl integer.
 
 sub year_days($) {
 	my($y) = @_;
-	return year_leap($y) ? 366 : 365;
+	return _year_leap($y) ? 366 : 365;
 }
 
 use constant GREGORIAN_ZERO_CJDN => 1721060;   # 0000-001
@@ -350,8 +352,8 @@ sub cjdn_to_yd($) {
 	my($cjdn) = @_;
 	use integer;
 	my $d = $cjdn - GREGORIAN_ZERO_CJDN;
-	my $qcents = fdiv($d, 365*400 + 97);
-	$d = numify($d - $qcents * (365*400 + 97));
+	my $qcents = _fdiv($d, 365*400 + 97);
+	$d = _numify($d - $qcents * (365*400 + 97));
 	my $y = $d / 366;
 	my $leaps = ($y + 3) / 4;
 	$leaps -= ($leaps - 1) / 25 unless $leaps == 0;
@@ -374,12 +376,12 @@ It takes year and ordinal day numbers, and returns the corresponding CJDN.
 sub yd_to_cjdn($$) {
 	my($y, $d) = @_;
 	use integer;
-	my $qcents = fdiv($y, 400);
-	$y = numify($y - $qcents * 400);
+	my $qcents = _fdiv($y, 400);
+	$y = _numify($y - $qcents * 400);
 	my $yd = year_days($y);
 	croak "day number $d is out of the range [1, $yd]"
 		unless $d >= 1 && $d <= $yd;
-	$d = numify($d);
+	$d = _numify($d);
 	my $leaps = ($y + 3) / 4;
 	$leaps -= ($leaps - 1) / 25 unless $leaps == 0;
 	return (GREGORIAN_ZERO_CJDN + 365*$y + $leaps + ($d - 1)) +
@@ -410,7 +412,7 @@ sub present_yd($;$) {
 		croak "day number $d is out of the displayable range"
 			unless $d >= 0 && $d < 1000;
 	}
-	return sprintf("%s-%03d", present_y($y), numify($d));
+	return sprintf("%s-%03d", present_y($y), _numify($d));
 }
 
 =back
@@ -434,21 +436,21 @@ weeks in that year as a native Perl integer.
 
 =cut
 
-# year_phase(YEAR): find day of week of first day of year
+# _year_phase(YEAR): find day of week of first day of year
 #
 # The argument must be a native Perl integer.  The return value is
 # zero-based, in the range 0 = Monday to 6 = Sunday.
 
-sub year_phase($) {
+sub _year_phase($) {
 	my($y) = @_;
 	return yd_to_cjdn($y, 1) % 7;
 }
 
 sub year_weeks($) {
 	my($y) = @_;
-	$y = numify(fmod($y, 400));
-	my $phase = year_phase($y);
-	return $phase == 3 || ($phase == 2 && year_leap($y)) ? 53 : 52;
+	$y = _numify(_fmod($y, 400));
+	my $phase = _year_phase($y);
+	return $phase == 3 || ($phase == 2 && _year_leap($y)) ? 53 : 52;
 }
 
 =item cjdn_to_ywd(CJDN)
@@ -461,10 +463,10 @@ of a year, week, and day.
 sub cjdn_to_ywd($) {
 	my($cjdn) = @_;
 	my($y, $d) = cjdn_to_yd($cjdn);
-	my $py = numify(fmod($y, 400));
-	my $phase = year_phase($py);
+	my $py = _numify(_fmod($y, 400));
+	my $phase = _year_phase($py);
 	my $start_wk1 = ($phase <= 3 ? 1 : 8) - $phase;
-	my $w = fdiv($d - $start_wk1, 7);
+	my $w = _fdiv($d - $start_wk1, 7);
 	if($w == -1) {
 		$y--;
 		$w = year_weeks($py - 1);
@@ -492,9 +494,10 @@ sub ywd_to_cjdn($$$) {
 	croak "day number $d is out of the range [1, 7]"
 		unless $d >= 1 && $d <= 7;
 	my $start_cjdn = yd_to_cjdn($y, 1);
-	my $phase = fmod($start_cjdn, 7);
+	my $phase = _fmod($start_cjdn, 7);
 	return $start_cjdn +
-		(($phase <= 3 ? -8 : -1) - $phase + numify($w)*7 + numify($d));
+		(($phase <= 3 ? -8 : -1) - $phase +
+			_numify($w)*7 + _numify($d));
 }
 
 =item present_ywd(CJDN)
@@ -523,7 +526,7 @@ sub present_ywd($;$$) {
 		croak "day number $d is out of the displayable range"
 			unless $d >= 0 && $d < 10;
 	}
-	return sprintf("%s-W%02d-%d", present_y($y), numify($w), numify($d));
+	return sprintf("%s-W%02d-%d", present_y($y), _numify($w), _numify($d));
 }
 
 =back
@@ -539,7 +542,9 @@ Andrew Main (Zefram) <zefram@fysh.org>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006, 2007 Andrew Main (Zefram) <zefram@fysh.org>
+Copyright (C) 2006, 2007, 2009 Andrew Main (Zefram) <zefram@fysh.org>
+
+=head1 LICENSE
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

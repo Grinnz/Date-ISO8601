@@ -1,6 +1,5 @@
 use warnings;
 use strict;
-no strict "subs";
 
 use Module::Build;
 
@@ -8,26 +7,28 @@ Module::Build->new(
 	module_name => "Date::ISO8601",
 	license => "perl",
 	build_requires => {
-		Module::Build => 0,
-		Test::More => 0,
-		perl => "5.006",
-		strict => 0,
-		warnings => 0,
+		"Module::Build" => 0,
+		"Test::More" => 0,
+		"perl" => "5.006",
+		"strict" => 0,
+		"warnings" => 0,
 	},
 	requires => {
-		Carp => 0,
-		Exporter => 0,
-		base => 0,
-		constant => 0,
-		perl => "5.006",
-		strict => 0,
-		warnings => 0,
+		"Carp" => 0,
+		"Exporter" => 0,
+		"constant" => 0,
+		"integer" => 0,
+		"parent" => 0,
+		"perl" => "5.006",
+		"strict" => 0,
+		"warnings" => 0,
 	},
 	conflicts => {
-		Math::BigInt => "< 1.64",
-		Math::BigRat => "< 0.08",
+		"Math::BigInt" => "< 1.64",
+		"Math::BigRat" => "< 0.08",
 	},
 	dynamic_config => 0,
+	meta_add => { distribution_type => "module" },
 	create_makefile_pl => "passthrough",
 	sign => 1,
 )->create_build_script;
