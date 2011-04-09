@@ -1,3 +1,17 @@
+version 0.004; 2011-04-09
+
+  * check for required Perl version at runtime
+
+  * use full stricture in test suite
+
+  * in Build.PL, explicitly declare configure-time requirements
+
+  * remove bogus "exit 0" from Build.PL
+
+  * include META.json in distribution
+
+  * add MYMETA.json and MYMETA.yml to .cvsignore
+
 version 0.003; 2009-04-21
 
   * use "[0-9]" instead of "\d" in regexp in present_y()

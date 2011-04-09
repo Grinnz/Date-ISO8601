@@ -1,3 +1,6 @@
+use warnings;
+use strict;
+
 use Test::More tests => 1 + 3*14;
 
 BEGIN { use_ok "Date::ISO8601", qw(present_y); }
@@ -34,3 +37,5 @@ check(1234, "1234");
 check(12345, "+12345");
 check(123456, "+123456");
 check("+00000123", "0123");
+
+1;

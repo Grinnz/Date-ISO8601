@@ -1,3 +1,6 @@
+use warnings;
+use strict;
+
 use Test::More tests => 1 + 3*8 + 3 + 6*9 + 9;
 
 BEGIN {
@@ -90,3 +93,5 @@ is present_yd(1233, 366), "1233-366";
 is present_yd(1233, 999), "1233-999";
 eval { present_yd(1233, -1) }; isnt $@, "";
 eval { present_yd(1233, 1000) }; isnt $@, "";
+
+1;

@@ -92,12 +92,13 @@ being handled is known to be sufficiently small.
 
 package Date::ISO8601;
 
+{ use 5.006; }
 use warnings;
 use strict;
 
 use Carp qw(croak);
 
-our $VERSION = "0.003";
+our $VERSION = "0.004";
 
 use parent "Exporter";
 our @EXPORT_OK = qw(
@@ -542,7 +543,8 @@ Andrew Main (Zefram) <zefram@fysh.org>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006, 2007, 2009 Andrew Main (Zefram) <zefram@fysh.org>
+Copyright (C) 2006, 2007, 2009, 2011
+Andrew Main (Zefram) <zefram@fysh.org>
 
 =head1 LICENSE
 

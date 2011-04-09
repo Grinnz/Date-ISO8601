@@ -1,3 +1,6 @@
+use warnings;
+use strict;
+
 use Test::More tests => 1 + 3*12 + 5 + 6*21 + 11;
 
 BEGIN {
@@ -114,3 +117,5 @@ eval { present_ywd(1233, -1, 1) }; isnt $@, "";
 eval { present_ywd(1233, 100, 1) }; isnt $@, "";
 eval { present_ywd(1233, 1, -1) }; isnt $@, "";
 eval { present_ywd(1233, 1, 10) }; isnt $@, "";
+
+1;
